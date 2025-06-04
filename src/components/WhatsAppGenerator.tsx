@@ -158,7 +158,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                   <Checkbox
                     id="includeDocuments"
                     checked={includeDocuments}
-                    onCheckedChange={setIncludeDocuments}
+                    onCheckedChange={(checked) => setIncludeDocuments(checked === true)}
                   />
                   <Label htmlFor="includeDocuments" className="text-sm">
                     Incluir lista de documentos
@@ -169,7 +169,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                   <Checkbox
                     id="includeDriveLink"
                     checked={includeDriveLink}
-                    onCheckedChange={setIncludeDriveLink}
+                    onCheckedChange={(checked) => setIncludeDriveLink(checked === true)}
                   />
                   <Label htmlFor="includeDriveLink" className="text-sm">
                     Incluir link do Drive
@@ -180,7 +180,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                   <Checkbox
                     id="includeTutorial"
                     checked={includeTutorial}
-                    onCheckedChange={setIncludeTutorial}
+                    onCheckedChange={(checked) => setIncludeTutorial(checked === true)}
                   />
                   <Label htmlFor="includeTutorial" className="text-sm">
                     Incluir tutorial do Drive
