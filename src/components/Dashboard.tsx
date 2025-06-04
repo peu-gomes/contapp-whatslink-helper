@@ -7,7 +7,7 @@ import { Client } from '@/types';
 import ClientList from './ClientList';
 import ClientForm from './ClientForm';
 import WhatsAppGenerator from './WhatsAppGenerator';
-import { Users, MessageSquare, Plus, LogOut } from 'lucide-react';
+import { Users, MessageSquare, Plus, LogOut, User, Building2 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -105,36 +105,96 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <header className="bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Sistema Contador</h1>
-              <p className="text-sm text-gray-600">Bem-vindo, {user?.name}</p>
+          <div className="flex justify-between items-center py-6">
+            {/* Logo e informações do usuário */}
+            <div className="flex items-center space-x-4">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl shadow-lg">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Sistema Contador
+                </h1>
+                <div className="flex items-center space-x-2 mt-1">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <p className="text-sm text-gray-600 font-medium">Bem-vindo, {user?.name}</p>
+                </div>
+              </div>
             </div>
-            <nav className="flex space-x-4">
+
+            {/* Navegação e ações */}
+            <div className="flex items-center space-x-2">
+              <nav className="hidden md:flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                <Button 
+                  variant={activeView === 'dashboard' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveView('dashboard')}
+                  className={activeView === 'dashboard' ? 'shadow-md' : ''}
+                >
+                  Dashboard
+                </Button>
+                <Button 
+                  variant={activeView === 'clients' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveView('clients')}
+                  className={activeView === 'clients' ? 'shadow-md' : ''}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Clientes
+                </Button>
+                <Button 
+                  variant={activeView === 'whatsapp' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveView('whatsapp')}
+                  className={activeView === 'whatsapp' ? 'shadow-md' : ''}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+              </nav>
+
+              {/* Botão de logout */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={logout}
+                className="ml-4 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </div>
+
+          {/* Navegação mobile */}
+          <div className="md:hidden pb-4">
+            <nav className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
               <Button 
                 variant={activeView === 'dashboard' ? 'default' : 'ghost'}
+                size="sm"
                 onClick={() => setActiveView('dashboard')}
+                className={`flex-1 ${activeView === 'dashboard' ? 'shadow-md' : ''}`}
               >
                 Dashboard
               </Button>
               <Button 
                 variant={activeView === 'clients' ? 'default' : 'ghost'}
+                size="sm"
                 onClick={() => setActiveView('clients')}
+                className={`flex-1 ${activeView === 'clients' ? 'shadow-md' : ''}`}
               >
                 Clientes
               </Button>
               <Button 
                 variant={activeView === 'whatsapp' ? 'default' : 'ghost'}
+                size="sm"
                 onClick={() => setActiveView('whatsapp')}
+                className={`flex-1 ${activeView === 'whatsapp' ? 'shadow-md' : ''}`}
               >
                 WhatsApp
-              </Button>
-              <Button variant="outline" onClick={logout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
               </Button>
             </nav>
           </div>
