@@ -6,35 +6,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Document } from '@/types';
+import { Client, Document } from '@/types';
 import { useClients } from '@/hooks/useClients';
-import { Plus, X } from 'lucide-react';
+import { useDocuments } from '@/hooks/useDocuments';
+import { Plus, X, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-interface ClientFormProps {
+interface ClientEditFormProps {
+  client: Client;
   onSave: () => void;
+  onCancel: () => void;
 }
 
-const defaultDocuments: Omit<Document, 'id' | 'client_id' | 'created_at' | 'updated_at'>[] = [
-  { name: 'RG/CPF', drive_path: '', document_type: 'receive', required: true, received: false },
-  { name: 'Comprovante de Residência', drive_path: '', document_type: 'receive', required: true, received: false },
-  { name: 'Contrato Social', drive_path: '', document_type: 'receive', required: false, received: false },
-  { name: 'Cartão CNPJ', drive_path: '', document_type: 'receive', required: false, received: false },
-  { name: 'Balancete', drive_path: '', document_type: 'receive', required: false, received: false },
-];
-
-const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
-  const [companyName, setCompanyName] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [driveLink, setDriveLink] = useState('');
-  const [documents, setDocuments] = useState<(Omit<Document, 'id' | 'client_id' | 'created_at' | 'updated_at'> & { tempId: string })[]>(
-    defaultDocuments.map((doc, index) => ({ ...doc, tempId: index.toString() }))
-  );
+const ClientEditForm: React.FC<ClientEditFormProps> = ({ client, onSave, onCancel }) => {
+  const [companyName, setCompanyName] = useState(client.company_name);
+  const [contactName, setContactName] = useState(client.contact_name);
+  const [phone, setPhone] = useState(client.phone);
+  const [driveLink, setDriveLink] = useState(client.drive_link || '');
   const [newDocName, setNewDocName] = useState('');
   const [newDocType, setNewDocType] = useState<'send' | 'receive'>('receive');
 
-  const { createClient, isCreating } = useClients();
+  const { updateClient, isUpdating } = useClients();
+  const { createDocument, updateDocument, deleteDocument } = useDocuments(client.id);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,70 +41,76 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
       return;
     }
 
-    createClient({
-      company_name: companyName,
-      contact_name: contactName,
-      phone,
-      drive_link: driveLink,
-      documents: documents.map(({ tempId, ...doc }) => doc),
+    updateClient({
+      clientId: client.id,
+      clientData: {
+        company_name: companyName,
+        contact_name: contactName,
+        phone,
+        drive_link: driveLink,
+      }
     });
 
-    // Reset form
-    setCompanyName('');
-    setContactName('');
-    setPhone('');
-    setDriveLink('');
-    setDocuments(defaultDocuments.map((doc, index) => ({ ...doc, tempId: index.toString() })));
-    
     onSave();
   };
 
   const addDocument = () => {
     if (!newDocName.trim()) return;
     
-    const newDoc = {
-      tempId: Date.now().toString(),
+    createDocument({
       name: newDocName,
-      drive_path: '',
       document_type: newDocType,
       required: false,
       received: false,
-    };
+    });
     
-    setDocuments([...documents, newDoc]);
     setNewDocName('');
     setNewDocType('receive');
   };
 
-  const removeDocument = (tempId: string) => {
-    setDocuments(documents.filter(doc => doc.tempId !== tempId));
+  const removeDocument = (docId: string) => {
+    deleteDocument(docId);
   };
 
-  const toggleDocumentReceived = (tempId: string) => {
-    setDocuments(documents.map(doc => 
-      doc.tempId === tempId ? { ...doc, received: !doc.received } : doc
-    ));
+  const toggleDocumentReceived = (doc: Document) => {
+    updateDocument({
+      documentId: doc.id,
+      documentData: { received: !doc.received }
+    });
   };
 
-  const toggleDocumentRequired = (tempId: string) => {
-    setDocuments(documents.map(doc => 
-      doc.tempId === tempId ? { ...doc, required: !doc.required } : doc
-    ));
+  const toggleDocumentRequired = (doc: Document) => {
+    updateDocument({
+      documentId: doc.id,
+      documentData: { required: !doc.required }
+    });
   };
 
-  const updateDocumentType = (tempId: string, type: 'send' | 'receive') => {
-    setDocuments(documents.map(doc => 
-      doc.tempId === tempId ? { ...doc, document_type: type } : doc
-    ));
+  const updateDocumentType = (doc: Document, type: 'send' | 'receive') => {
+    updateDocument({
+      documentId: doc.id,
+      documentData: { document_type: type }
+    });
   };
 
   return (
     <div className="max-w-4xl mx-auto">
+      <div className="mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={onCancel}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para lista
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Novo Cliente</CardTitle>
+          <CardTitle>Editar Cliente</CardTitle>
           <CardDescription>
-            Preencha as informações do cliente e configure os documentos necessários
+            Atualize as informações do cliente e gerencie os documentos
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -165,11 +164,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
               <Label>Documentos</Label>
               
               <div className="space-y-2">
-                {documents.map((doc) => (
-                  <div key={doc.tempId} className="flex items-center space-x-3 p-3 border rounded-lg">
+                {client.documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center space-x-3 p-3 border rounded-lg">
                     <Checkbox
                       checked={doc.received}
-                      onCheckedChange={() => toggleDocumentReceived(doc.tempId)}
+                      onCheckedChange={() => toggleDocumentReceived(doc)}
                     />
                     <div className="flex-1">
                       <span className={doc.received ? 'line-through text-gray-500' : ''}>
@@ -185,7 +184,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
                     <div className="flex items-center space-x-2">
                       <Select
                         value={doc.document_type}
-                        onValueChange={(value: 'send' | 'receive') => updateDocumentType(doc.tempId, value)}
+                        onValueChange={(value: 'send' | 'receive') => updateDocumentType(doc, value)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
@@ -197,14 +196,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
                       </Select>
                       <Checkbox
                         checked={doc.required}
-                        onCheckedChange={() => toggleDocumentRequired(doc.tempId)}
+                        onCheckedChange={() => toggleDocumentRequired(doc)}
                       />
                       <Label className="text-xs text-gray-500">Obrigatório</Label>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeDocument(doc.tempId)}
+                        onClick={() => removeDocument(doc.id)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -235,13 +234,23 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isCreating}
-            >
-              {isCreating ? 'Salvando Cliente...' : 'Salvar Cliente'}
-            </Button>
+            <div className="flex space-x-4">
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={isUpdating}
+              >
+                {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -249,4 +258,4 @@ const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
   );
 };
 
-export default ClientForm;
+export default ClientEditForm;

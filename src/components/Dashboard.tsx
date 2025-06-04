@@ -1,61 +1,65 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Client } from '@/types';
+import { useClients } from '@/hooks/useClients';
 import ClientList from './ClientList';
 import ClientForm from './ClientForm';
+import ClientEditForm from './ClientEditForm';
 import WhatsAppGenerator from './WhatsAppGenerator';
 import { Users, MessageSquare, Plus, LogOut, User, Building2 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [activeView, setActiveView] = useState<'dashboard' | 'clients' | 'addClient' | 'whatsapp'>('dashboard');
+  const { user, profile, logout } = useAuth();
+  const { clients, isLoading } = useClients();
+  const [activeView, setActiveView] = useState<'dashboard' | 'clients' | 'addClient' | 'editClient' | 'whatsapp'>('dashboard');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  useEffect(() => {
-    const savedClients = localStorage.getItem('clients');
-    if (savedClients) {
-      setClients(JSON.parse(savedClients));
-    }
-  }, []);
-
-  const saveClients = (updatedClients: Client[]) => {
-    setClients(updatedClients);
-    localStorage.setItem('clients', JSON.stringify(updatedClients));
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client);
+    setActiveView('editClient');
   };
 
-  const handleSaveClient = (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newClient: Client = {
-      ...clientData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    const updatedClients = [...clients, newClient];
-    saveClients(updatedClients);
+  const handleClientSaved = () => {
     setActiveView('clients');
-  };
-
-  const handleDeleteClient = (clientId: string) => {
-    const updatedClients = clients.filter(client => client.id !== clientId);
-    saveClients(updatedClients);
+    setEditingClient(null);
   };
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-2">Carregando clientes...</span>
+        </div>
+      );
+    }
+
     switch (activeView) {
       case 'clients':
         return (
           <ClientList 
             clients={clients} 
-            onDeleteClient={handleDeleteClient}
             onSelectClient={setSelectedClient}
+            onEditClient={handleEditClient}
           />
         );
       case 'addClient':
-        return <ClientForm onSave={handleSaveClient} />;
+        return <ClientForm onSave={handleClientSaved} />;
+      case 'editClient':
+        return editingClient ? (
+          <ClientEditForm 
+            client={editingClient} 
+            onSave={handleClientSaved}
+            onCancel={() => {
+              setActiveView('clients');
+              setEditingClient(null);
+            }}
+          />
+        ) : null;
       case 'whatsapp':
         return <WhatsAppGenerator clients={clients} selectedClient={selectedClient} />;
       default:
@@ -120,7 +124,9 @@ const Dashboard: React.FC = () => {
                 </h1>
                 <div className="flex items-center space-x-2 mt-1">
                   <User className="h-4 w-4 text-gray-500" />
-                  <p className="text-sm text-gray-600 font-medium">Bem-vindo, {user?.name}</p>
+                  <p className="text-sm text-gray-600 font-medium">
+                    Bem-vindo, {profile?.name || user?.email}
+                  </p>
                 </div>
               </div>
             </div>

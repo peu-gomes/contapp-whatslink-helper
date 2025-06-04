@@ -39,23 +39,32 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
       return;
     }
 
-    let message = `Olá ${client.contactName}! Tudo bem?\n\n`;
+    let message = `Olá ${client.contact_name}! Tudo bem?\n\n`;
     message += `Aqui é da contabilidade. `;
 
     if (customMessage.trim()) {
       message += `${customMessage}\n\n`;
     } else {
-      message += `Estou entrando em contato para organizar a documentação da ${client.companyName}.\n\n`;
+      message += `Estou entrando em contato para organizar a documentação da ${client.company_name}.\n\n`;
     }
 
     if (includeDocuments && client.documents.length > 0) {
-      const pendingDocs = client.documents.filter(doc => !doc.received);
-      const receivedDocs = client.documents.filter(doc => doc.received);
+      const pendingReceiveDocs = client.documents.filter(doc => doc.document_type === 'receive' && !doc.received);
+      const receivedDocs = client.documents.filter(doc => doc.document_type === 'receive' && doc.received);
+      const sendDocs = client.documents.filter(doc => doc.document_type === 'send');
 
-      if (pendingDocs.length > 0) {
-        message += `📋 *Documentos pendentes:*\n`;
-        pendingDocs.forEach(doc => {
+      if (pendingReceiveDocs.length > 0) {
+        message += `📥 *Documentos que precisamos receber:*\n`;
+        pendingReceiveDocs.forEach(doc => {
           message += `• ${doc.name}${doc.required ? ' *(obrigatório)*' : ''}\n`;
+        });
+        message += '\n';
+      }
+
+      if (sendDocs.length > 0) {
+        message += `📤 *Documentos que enviaremos para você:*\n`;
+        sendDocs.forEach(doc => {
+          message += `• ${doc.name}\n`;
         });
         message += '\n';
       }
@@ -69,8 +78,8 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
       }
     }
 
-    if (includeDriveLink && client.driveLink) {
-      message += `📁 *Link da pasta no Drive:*\n${client.driveLink}\n\n`;
+    if (includeDriveLink && client.drive_link) {
+      message += `📁 *Link da pasta no Drive:*\n${client.drive_link}\n\n`;
     }
 
     if (includeTutorial) {
@@ -144,7 +153,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
               <SelectContent>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.companyName} - {c.contactName}
+                    {c.company_name} - {c.contact_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -215,11 +224,11 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
             <Textarea
               value={generatedMessage}
               onChange={(e) => setGeneratedMessage(e.target.value)}
-              rows={12}
+              rows={15}
               className="font-mono text-sm"
             />
             
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button onClick={copyToClipboard} variant="outline" className="flex-1">
                 <Copy className="h-4 w-4 mr-2" />
                 Copiar Mensagem

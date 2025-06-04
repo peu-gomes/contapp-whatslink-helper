@@ -4,15 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Client } from '@/types';
-import { Users, Link, MessageSquare } from 'lucide-react';
+import { useClients } from '@/hooks/useClients';
+import { Users, Link, MessageSquare, Edit, Trash2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface ClientListProps {
   clients: Client[];
-  onDeleteClient: (clientId: string) => void;
   onSelectClient: (client: Client) => void;
+  onEditClient: (client: Client) => void;
 }
 
-const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient, onSelectClient }) => {
+const ClientList: React.FC<ClientListProps> = ({ clients, onSelectClient, onEditClient }) => {
+  const { deleteClient, isDeleting } = useClients();
+
+  const handleDeleteClient = (clientId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) {
+      deleteClient(clientId);
+    }
+  };
+
   if (clients.length === 0) {
     return (
       <div className="text-center py-12">
@@ -36,22 +46,22 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient, onSele
         {clients.map((client) => (
           <Card key={client.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="text-lg">{client.companyName}</CardTitle>
-              <CardDescription>{client.contactName}</CardDescription>
+              <CardTitle className="text-lg">{client.company_name}</CardTitle>
+              <CardDescription>{client.contact_name}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">
                   <strong>Telefone:</strong> {client.phone}
                 </p>
-                {client.driveLink && (
+                {client.drive_link && (
                   <div className="flex items-center space-x-2">
                     <Link className="h-4 w-4 text-blue-500" />
                     <a 
-                      href={client.driveLink} 
+                      href={client.drive_link} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-500 hover:underline"
+                      className="text-sm text-blue-500 hover:underline truncate"
                     >
                       Pasta no Drive
                     </a>
@@ -69,8 +79,13 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient, onSele
                       className="text-xs"
                     >
                       {doc.name}
+                      {doc.document_type === 'send' && ' 📤'}
+                      {doc.document_type === 'receive' && ' 📥'}
                     </Badge>
                   ))}
+                  {client.documents.length === 0 && (
+                    <span className="text-xs text-gray-500">Nenhum documento cadastrado</span>
+                  )}
                 </div>
               </div>
 
@@ -85,10 +100,18 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient, onSele
                 </Button>
                 <Button 
                   size="sm" 
-                  variant="destructive" 
-                  onClick={() => onDeleteClient(client.id)}
+                  variant="outline"
+                  onClick={() => onEditClient(client)}
                 >
-                  Excluir
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={() => handleDeleteClient(client.id)}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
