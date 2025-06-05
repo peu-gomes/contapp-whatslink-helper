@@ -20,6 +20,8 @@ export interface Client {
   contact_name: string;
   phone: string;
   drive_link?: string;
+  message_template_receive?: string;
+  message_template_send?: string;
   documents: Document[];
   created_at: string;
   updated_at: string;
@@ -40,8 +42,12 @@ export interface Document {
 export interface MessageTemplate {
   id: string;
   name: string;
+  type: 'send' | 'receive';
   content: string;
   variables: string[];
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DriveFolder {

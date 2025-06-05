@@ -16,6 +16,8 @@ export type Database = {
           created_at: string
           drive_link: string | null
           id: string
+          message_template_receive: string | null
+          message_template_send: string | null
           phone: string
           updated_at: string
           user_id: string
@@ -26,6 +28,8 @@ export type Database = {
           created_at?: string
           drive_link?: string | null
           id?: string
+          message_template_receive?: string | null
+          message_template_send?: string | null
           phone: string
           updated_at?: string
           user_id: string
@@ -36,6 +40,8 @@ export type Database = {
           created_at?: string
           drive_link?: string | null
           id?: string
+          message_template_receive?: string | null
+          message_template_send?: string | null
           phone?: string
           updated_at?: string
           user_id?: string
@@ -93,6 +99,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      message_templates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          type: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          type: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

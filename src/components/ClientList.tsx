@@ -3,15 +3,21 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Client } from '@/types';
-import { Phone, Building2, Edit, Trash2 } from 'lucide-react';
+import { Phone, Building2, Edit, Settings } from 'lucide-react';
 
 interface ClientListProps {
   clients: Client[];
   onSelectClient: (client: Client) => void;
   onEditClient: (client: Client) => void;
+  onConfigureClient: (client: Client) => void;
 }
 
-const ClientList: React.FC<ClientListProps> = ({ clients, onSelectClient, onEditClient }) => {
+const ClientList: React.FC<ClientListProps> = ({ 
+  clients, 
+  onSelectClient, 
+  onEditClient, 
+  onConfigureClient 
+}) => {
   if (clients.length === 0) {
     return (
       <div className="text-center py-12">
@@ -39,8 +45,18 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onSelectClient, onEdit
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEditClient(client)}
+                    onClick={() => onConfigureClient(client)}
                     className="text-blue-600 hover:text-blue-800"
+                    title="Configurar documentos e templates"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditClient(client)}
+                    className="text-green-600 hover:text-green-800"
+                    title="Editar informações básicas"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -59,6 +75,20 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onSelectClient, onEdit
                     📁 Drive configurado
                   </div>
                 )}
+                
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {client.message_template_receive && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                      📥 Template Personalizado
+                    </span>
+                  )}
+                  {client.message_template_send && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                      📤 Template Personalizado
+                    </span>
+                  )}
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
