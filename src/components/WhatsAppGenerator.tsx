@@ -9,80 +9,56 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Client } from '@/types';
 import { useDocuments } from '@/hooks/useDocuments';
-import { useMessageTemplates } from '@/hooks/useMessageTemplates';
-import { MessageSquare, Copy, Send, Settings } from 'lucide-react';
+import { MessageSquare, Copy, Send } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface WhatsAppGeneratorProps {
   clients: Client[];
-  selectedClient: Client | null;
 }
 
-const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selectedClient }) => {
-  const [currentClient, setCurrentClient] = useState<Client | null>(selectedClient);
-  const [messageType, setMessageType] = useState<'send' | 'receive'>('receive');
+const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
+  const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [generatedMessage, setGeneratedMessage] = useState('');
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const { documents } = useDocuments(currentClient?.id || '');
-  const { templates } = useMessageTemplates();
 
   const generateMessage = () => {
-    if (!currentClient) {
+    if (!currentClient || !selectedTemplate) {
       toast({
         title: "Erro",
-        description: "Selecione um cliente primeiro.",
+        description: "Selecione um cliente e um template primeiro.",
         variant: "destructive",
       });
       return;
     }
 
-    // Filtrar documentos selecionados do tipo correto
-    const clientDocs = documents.filter(doc => 
-      doc.document_type === messageType && 
-      selectedDocuments.includes(doc.id)
-    );
+    const template = currentClient.message_templates?.find(t => t.id === selectedTemplate);
+    if (!template) return;
+
+    // Filtrar documentos selecionados
+    const clientDocs = documents.filter(doc => selectedDocuments.includes(doc.id));
     
-    if (clientDocs.length === 0) {
-      toast({
-        title: "Aviso",
-        description: "Selecione pelo menos um documento para gerar a mensagem.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Usar template personalizado do cliente ou template padrão
-    let template = '';
-    if (messageType === 'receive' && currentClient.message_template_receive) {
-      template = currentClient.message_template_receive;
-    } else if (messageType === 'send' && currentClient.message_template_send) {
-      template = currentClient.message_template_send;
-    } else {
-      // Usar template padrão
-      const defaultTemplate = templates.find(t => t.type === messageType && t.is_default);
-      template = defaultTemplate?.content || '';
-    }
-
     // Gerar lista de documentos
     let documentsList = '';
+    let documentPath = '';
+    
     clientDocs.forEach((doc, index) => {
-      const status = doc.received ? '✅' : '❌';
-      const path = doc.drive_path ? ` (${doc.drive_path})` : '';
-      documentsList += `${index + 1}. ${doc.name}${path}`;
-      
-      if (messageType === 'receive') {
-        documentsList += ` ${status}`;
+      documentsList += `${index + 1}. ${doc.name}`;
+      if (doc.drive_path) {
+        documentsList += ` (${doc.drive_path})`;
+        if (index === 0) documentPath = doc.drive_path; // Primeiro documento para a variável path
       }
-      
       documentsList += '\n';
     });
 
     // Substituir variáveis no template
-    let message = template
+    let message = template.content
       .replace(/\{\{contact_name\}\}/g, currentClient.contact_name)
       .replace(/\{\{company_name\}\}/g, currentClient.company_name)
       .replace(/\{\{phone\}\}/g, currentClient.phone)
-      .replace(/\{\{documents_list\}\}/g, documentsList.trim());
+      .replace(/\{\{documents_list\}\}/g, documentsList.trim())
+      .replace(/\{\{document_path\}\}/g, documentPath);
 
     setGeneratedMessage(message);
   };
@@ -112,8 +88,6 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
     );
   };
 
-  const filteredDocuments = documents.filter(doc => doc.document_type === messageType);
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -139,6 +113,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                     const client = clients.find(c => c.id === value);
                     setCurrentClient(client || null);
                     setSelectedDocuments([]);
+                    setSelectedTemplate('');
                   }}
                 >
                   <SelectTrigger>
@@ -154,24 +129,26 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="message-type">Tipo de Mensagem</Label>
-                <Select
-                  value={messageType}
-                  onValueChange={(value: 'send' | 'receive') => {
-                    setMessageType(value);
-                    setSelectedDocuments([]);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receive">📥 Solicitar Documentos</SelectItem>
-                    <SelectItem value="send">📤 Enviar Documentos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {currentClient && currentClient.message_templates && currentClient.message_templates.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="template-select">Template de Mensagem</Label>
+                  <Select
+                    value={selectedTemplate}
+                    onValueChange={setSelectedTemplate}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentClient.message_templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {currentClient && (
                 <div className="p-4 bg-gray-50 rounded-lg">
@@ -181,10 +158,9 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                     <strong>Contato:</strong> {currentClient.contact_name}<br />
                     <strong>Telefone:</strong> {currentClient.phone}
                   </p>
-                  {((messageType === 'receive' && currentClient.message_template_receive) ||
-                    (messageType === 'send' && currentClient.message_template_send)) && (
+                  {currentClient.message_templates && (
                     <Badge variant="secondary" className="mt-2">
-                      Template personalizado configurado
+                      {currentClient.message_templates.length} template(s) configurado(s)
                     </Badge>
                   )}
                 </div>
@@ -192,7 +168,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
             </CardContent>
           </Card>
 
-          {currentClient && filteredDocuments.length > 0 && (
+          {currentClient && documents.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Selecionar Documentos</CardTitle>
@@ -202,7 +178,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {filteredDocuments.map((doc) => (
+                  {documents.map((doc) => (
                     <div key={doc.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
                       <Checkbox
                         checked={selectedDocuments.includes(doc.id)}
@@ -216,12 +192,6 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
                               Obrigatório
                             </Badge>
                           )}
-                          <Badge 
-                            variant={doc.received ? 'default' : 'destructive'} 
-                            className="text-xs"
-                          >
-                            {doc.received ? '✅' : '❌'}
-                          </Badge>
                         </div>
                         {doc.drive_path && (
                           <p className="text-sm text-gray-600 mt-1">
@@ -240,7 +210,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
             <Button 
               onClick={generateMessage} 
               className="flex-1" 
-              disabled={!currentClient || selectedDocuments.length === 0}
+              disabled={!currentClient || !selectedTemplate}
             >
               Gerar Mensagem
             </Button>
@@ -278,28 +248,17 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients, selected
             </CardContent>
           </Card>
 
-          {currentClient && (
+          {!currentClient && (
             <Card>
               <CardHeader>
-                <CardTitle>Template Atual</CardTitle>
-                <CardDescription>
-                  {messageType === 'receive' ? 'Solicitar documentos' : 'Enviar documentos'}
-                </CardDescription>
+                <CardTitle>Como usar</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-gray-600">
-                  {((messageType === 'receive' && currentClient.message_template_receive) ||
-                    (messageType === 'send' && currentClient.message_template_send)) ? (
-                    <div>
-                      <Badge variant="default" className="mb-2">Template Personalizado</Badge>
-                      <p>Este cliente possui um template personalizado configurado.</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <Badge variant="secondary" className="mb-2">Template Padrão</Badge>
-                      <p>Usando template padrão do sistema. Configure um template personalizado nas configurações do cliente.</p>
-                    </div>
-                  )}
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p>1. Selecione um cliente</p>
+                  <p>2. Escolha um template de mensagem</p>
+                  <p>3. Selecione os documentos</p>
+                  <p>4. Gere e envie a mensagem</p>
                 </div>
               </CardContent>
             </Card>

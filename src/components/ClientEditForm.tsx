@@ -4,9 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Client } from '@/types';
 import { useClients } from '@/hooks/useClients';
+import { useDocuments } from '@/hooks/useDocuments';
 import { toast } from '@/hooks/use-toast';
+import { ArrowLeft } from 'lucide-react';
+import ClientDocuments from './ClientDocuments';
+import MessageTemplateManager from './MessageTemplateManager';
 
 interface ClientEditFormProps {
   client: Client;
@@ -53,72 +58,103 @@ const ClientEditForm: React.FC<ClientEditFormProps> = ({ client, onSave, onCance
     }));
   };
 
+  const handleSaveTemplates = (templates: any[]) => {
+    updateClient(client.id, { message_templates: templates });
+  };
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Editar Cliente</CardTitle>
-          <CardDescription>
-            Atualize as informações do cliente selecionado.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company_name">Nome da Empresa</Label>
-                <Input
-                  id="company_name"
-                  value={formData.company_name}
-                  onChange={(e) => handleChange('company_name', e.target.value)}
-                  placeholder="Nome da empresa"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact_name">Nome do Contato</Label>
-                <Input
-                  id="contact_name"
-                  value={formData.contact_name}
-                  onChange={(e) => handleChange('contact_name', e.target.value)}
-                  placeholder="Nome da pessoa de contato"
-                  required
-                />
-              </div>
-            </div>
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4">
+        <Button variant="ghost" onClick={onCancel}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Editar Cliente</h1>
+          <p className="text-gray-600">{client.company_name}</p>
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                placeholder="(11) 99999-9999"
-                required
-              />
-            </div>
+      <Tabs defaultValue="basic" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="basic">ℹ️ Informações Básicas</TabsTrigger>
+          <TabsTrigger value="documents">📄 Documentos</TabsTrigger>
+          <TabsTrigger value="templates">💬 Templates</TabsTrigger>
+        </TabsList>
 
-            <div className="space-y-2">
-              <Label htmlFor="drive_link">Link do Google Drive (opcional)</Label>
-              <Input
-                id="drive_link"
-                value={formData.drive_link}
-                onChange={(e) => handleChange('drive_link', e.target.value)}
-                placeholder="https://drive.google.com/drive/folders/..."
-              />
-            </div>
+        <TabsContent value="basic">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações do Cliente</CardTitle>
+              <CardDescription>
+                Atualize as informações básicas do cliente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">Nome da Empresa</Label>
+                    <Input
+                      id="company_name"
+                      value={formData.company_name}
+                      onChange={(e) => handleChange('company_name', e.target.value)}
+                      placeholder="Nome da empresa"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_name">Nome do Contato</Label>
+                    <Input
+                      id="contact_name"
+                      value={formData.contact_name}
+                      onChange={(e) => handleChange('contact_name', e.target.value)}
+                      placeholder="Nome da pessoa de contato"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div className="flex space-x-2 pt-4">
-              <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handleChange('phone', e.target.value)}
+                    placeholder="(11) 99999-9999"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="drive_link">Link do Google Drive (opcional)</Label>
+                  <Input
+                    id="drive_link"
+                    value={formData.drive_link}
+                    onChange={(e) => handleChange('drive_link', e.target.value)}
+                    placeholder="https://drive.google.com/drive/folders/..."
+                  />
+                </div>
+
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <ClientDocuments client={client} />
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <MessageTemplateManager 
+            templates={client.message_templates || []}
+            onSave={handleSaveTemplates}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

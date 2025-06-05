@@ -3,20 +3,16 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Client } from '@/types';
-import { Phone, Building2, Edit, Settings } from 'lucide-react';
+import { Phone, Building2, Edit, Plus } from 'lucide-react';
 
 interface ClientListProps {
   clients: Client[];
-  onSelectClient: (client: Client) => void;
   onEditClient: (client: Client) => void;
-  onConfigureClient: (client: Client) => void;
 }
 
 const ClientList: React.FC<ClientListProps> = ({ 
   clients, 
-  onSelectClient, 
-  onEditClient, 
-  onConfigureClient 
+  onEditClient
 }) => {
   if (clients.length === 0) {
     return (
@@ -41,26 +37,15 @@ const ClientList: React.FC<ClientListProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="truncate">{client.company_name}</span>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onConfigureClient(client)}
-                    className="text-blue-600 hover:text-blue-800"
-                    title="Configurar documentos e templates"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEditClient(client)}
-                    className="text-green-600 hover:text-green-800"
-                    title="Editar informações básicas"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEditClient(client)}
+                  className="text-blue-600 hover:text-blue-800"
+                  title="Editar cliente"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
               </CardTitle>
               <CardDescription>{client.contact_name}</CardDescription>
             </CardHeader>
@@ -77,26 +62,17 @@ const ClientList: React.FC<ClientListProps> = ({
                 )}
                 
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {client.message_template_receive && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                      📥 Template Personalizado
+                  {client.documents && client.documents.length > 0 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                      📄 {client.documents.length} documento(s)
                     </span>
                   )}
-                  {client.message_template_send && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                      📤 Template Personalizado
+                  {client.message_templates && client.message_templates.length > 0 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                      💬 {client.message_templates.length} template(s)
                     </span>
                   )}
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onSelectClient(client)}
-                  className="w-full mt-4"
-                >
-                  Selecionar Cliente
-                </Button>
               </div>
             </CardContent>
           </Card>

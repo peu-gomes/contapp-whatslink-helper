@@ -23,6 +23,7 @@ export interface Client {
   message_template_receive?: string;
   message_template_send?: string;
   documents: Document[];
+  message_templates?: MessageTemplate[];
   created_at: string;
   updated_at: string;
 }
@@ -34,7 +35,7 @@ export interface Document {
   drive_path?: string;
   document_type: 'send' | 'receive';
   required: boolean;
-  received: boolean;
+  received?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -42,12 +43,7 @@ export interface Document {
 export interface MessageTemplate {
   id: string;
   name: string;
-  type: 'send' | 'receive';
   content: string;
-  variables: string[];
-  is_default: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface DriveFolder {

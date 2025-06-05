@@ -23,9 +23,7 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
   const [newDoc, setNewDoc] = useState({
     name: '',
     drive_path: '',
-    document_type: 'receive' as 'send' | 'receive',
-    required: true,
-    received: false
+    required: true
   });
 
   const commonPaths = [
@@ -56,15 +54,14 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
 
     addDocument({
       client_id: client.id,
+      document_type: 'receive',
       ...newDoc
     });
 
     setNewDoc({
       name: '',
       drive_path: '',
-      document_type: 'receive',
-      required: true,
-      received: false
+      required: true
     });
     setIsAdding(false);
 
@@ -96,9 +93,7 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
     const [editData, setEditData] = useState({
       name: doc.name,
       drive_path: doc.drive_path || '',
-      document_type: doc.document_type,
-      required: doc.required,
-      received: doc.received
+      required: doc.required
     });
 
     if (isEditing) {
@@ -139,39 +134,12 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select 
-                  value={editData.document_type} 
-                  onValueChange={(value: 'send' | 'receive') => setEditData({...editData, document_type: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receive">📥 Receber</SelectItem>
-                    <SelectItem value="send">📤 Enviar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={editData.required}
-                    onCheckedChange={(checked) => setEditData({...editData, required: checked})}
-                  />
-                  <Label>Obrigatório</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={editData.received}
-                    onCheckedChange={(checked) => setEditData({...editData, received: checked})}
-                  />
-                  <Label>Recebido</Label>
-                </div>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={editData.required}
+                onCheckedChange={(checked) => setEditData({...editData, required: checked})}
+              />
+              <Label>Documento obrigatório</Label>
             </div>
 
             <div className="flex space-x-2">
@@ -204,9 +172,6 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
               <div className="flex items-center space-x-2 mb-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <h4 className="font-medium">{doc.name}</h4>
-                <Badge variant={doc.document_type === 'send' ? 'default' : 'secondary'}>
-                  {doc.document_type === 'send' ? '📤 Enviar' : '📥 Receber'}
-                </Badge>
               </div>
               
               {doc.drive_path && (
@@ -222,12 +187,6 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
                     Obrigatório
                   </Badge>
                 )}
-                <Badge 
-                  variant={doc.received ? 'default' : 'destructive'} 
-                  className="text-xs"
-                >
-                  {doc.received ? '✅ Recebido' : '❌ Pendente'}
-                </Badge>
               </div>
             </div>
 
@@ -310,39 +269,12 @@ const ClientDocuments: React.FC<ClientDocumentsProps> = ({ client }) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo de Documento</Label>
-                <Select 
-                  value={newDoc.document_type} 
-                  onValueChange={(value: 'send' | 'receive') => setNewDoc({...newDoc, document_type: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receive">📥 Receber do Cliente</SelectItem>
-                    <SelectItem value="send">📤 Enviar ao Cliente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={newDoc.required}
-                    onCheckedChange={(checked) => setNewDoc({...newDoc, required: checked})}
-                  />
-                  <Label>Documento obrigatório</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={newDoc.received}
-                    onCheckedChange={(checked) => setNewDoc({...newDoc, received: checked})}
-                  />
-                  <Label>Já foi recebido</Label>
-                </div>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={newDoc.required}
+                onCheckedChange={(checked) => setNewDoc({...newDoc, required: checked})}
+              />
+              <Label>Documento obrigatório</Label>
             </div>
 
             <div className="flex space-x-2">
