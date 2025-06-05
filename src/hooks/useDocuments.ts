@@ -1,107 +1,69 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 import { Document } from '@/types';
-import { toast } from '@/hooks/use-toast';
 
 export const useDocuments = (clientId: string) => {
-  const queryClient = useQueryClient();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const createDocumentMutation = useMutation({
-    mutationFn: async (documentData: Omit<Document, 'id' | 'client_id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('documents')
-        .insert({
-          client_id: clientId,
-          name: documentData.name,
-          drive_path: documentData.drive_path,
-          document_type: documentData.document_type,
-          required: documentData.required,
-          received: documentData.received,
-        })
-        .select()
-        .single();
+  useEffect(() => {
+    // For demo purposes, create some mock documents
+    const mockDocuments: Document[] = [
+      {
+        id: '1',
+        client_id: clientId,
+        name: 'Contrato Social',
+        drive_path: 'Documentos/Contratos/2025',
+        document_type: 'receive',
+        required: true,
+        received: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        client_id: clientId,
+        name: 'Declaração de IR',
+        drive_path: 'Documentos/Impostos/05/2025',
+        document_type: 'send',
+        required: true,
+        received: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    ];
+    
+    setDocuments(mockDocuments);
+    setIsLoading(false);
+  }, [clientId]);
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({
-        title: "Documento adicionado!",
-        description: "Documento foi adicionado com sucesso.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Não foi possível adicionar o documento.",
-        variant: "destructive",
-      });
-      console.error('Error creating document:', error);
-    },
-  });
+  const addDocument = (document: Omit<Document, 'id' | 'created_at' | 'updated_at'>) => {
+    const newDocument: Document = {
+      ...document,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setDocuments(prev => [...prev, newDocument]);
+  };
 
-  const updateDocumentMutation = useMutation({
-    mutationFn: async ({ documentId, documentData }: { 
-      documentId: string; 
-      documentData: Partial<Omit<Document, 'id' | 'client_id' | 'created_at' | 'updated_at'>>
-    }) => {
-      const { data, error } = await supabase
-        .from('documents')
-        .update(documentData)
-        .eq('id', documentId)
-        .select()
-        .single();
+  const updateDocument = (id: string, updates: Partial<Document>) => {
+    setDocuments(prev => prev.map(doc => 
+      doc.id === id 
+        ? { ...doc, ...updates, updated_at: new Date().toISOString() }
+        : doc
+    ));
+  };
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o documento.",
-        variant: "destructive",
-      });
-      console.error('Error updating document:', error);
-    },
-  });
-
-  const deleteDocumentMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      const { error } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({
-        title: "Documento removido!",
-        description: "Documento foi removido com sucesso.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover o documento.",
-        variant: "destructive",
-      });
-      console.error('Error deleting document:', error);
-    },
-  });
+  const deleteDocument = (id: string) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== id));
+  };
 
   return {
-    createDocument: createDocumentMutation.mutate,
-    updateDocument: updateDocumentMutation.mutate,
-    deleteDocument: deleteDocumentMutation.mutate,
-    isCreating: createDocumentMutation.isPending,
-    isUpdating: updateDocumentMutation.isPending,
-    isDeleting: deleteDocumentMutation.isPending,
+    documents,
+    isLoading,
+    addDocument,
+    updateDocument,
+    deleteDocument
   };
 };

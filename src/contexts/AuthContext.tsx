@@ -70,6 +70,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      // Check for demo credentials first
+      if (email === 'admin@contador.com' && password === '123456') {
+        // Create a mock user for demo purposes
+        const mockUser = {
+          id: 'demo-user-id',
+          email: 'admin@contador.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as User;
+        
+        const mockProfile = {
+          id: 'demo-user-id',
+          name: 'Administrador',
+          email: 'admin@contador.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        setUser(mockUser);
+        setProfile(mockProfile);
+        setSession({ user: mockUser } as Session);
+        return true;
+      }
+
+      // Try Supabase authentication for other users
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -117,6 +142,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async (): Promise<void> => {
     try {
       await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setSession(null);
     } catch (error) {
       console.error('Logout error:', error);
     }

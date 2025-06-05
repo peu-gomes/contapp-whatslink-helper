@@ -1,161 +1,75 @@
 
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Client, Document } from '@/types';
-import { toast } from '@/hooks/use-toast';
+import { Client } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useClients = () => {
-  const queryClient = useQueryClient();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
-  const { data: clients = [], isLoading, error } = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select(`
-          *,
-          documents (*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      return data.map(client => ({
-        ...client,
-        documents: client.documents || []
-      })) as Client[];
-    },
-  });
-
-  const createClientMutation = useMutation({
-    mutationFn: async (clientData: Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'documents'>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data: client, error: clientError } = await supabase
-        .from('clients')
-        .insert({
+  useEffect(() => {
+    if (user) {
+      // For demo purposes, create some mock clients
+      const mockClients: Client[] = [
+        {
+          id: '1',
           user_id: user.id,
-          company_name: clientData.company_name,
-          contact_name: clientData.contact_name,
-          phone: clientData.phone,
-          drive_link: clientData.drive_link,
-        })
-        .select()
-        .single();
+          company_name: 'Empresa ABC Ltda',
+          contact_name: 'João Silva',
+          phone: '(11) 99999-9999',
+          drive_link: 'https://drive.google.com/drive/folders/abc123',
+          documents: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          user_id: user.id,
+          company_name: 'Comércio XYZ ME',
+          contact_name: 'Maria Santos',
+          phone: '(11) 88888-8888',
+          drive_link: 'https://drive.google.com/drive/folders/xyz456',
+          documents: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
+      
+      setClients(mockClients);
+    }
+    setIsLoading(false);
+  }, [user]);
 
-      if (clientError) throw clientError;
+  const addClient = (client: Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'documents'>) => {
+    const newClient: Client = {
+      ...client,
+      id: Date.now().toString(),
+      user_id: user?.id || '',
+      documents: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setClients(prev => [...prev, newClient]);
+  };
 
-      // Insert documents if any
-      if (clientData.documents && clientData.documents.length > 0) {
-        const documentsToInsert = clientData.documents.map(doc => ({
-          client_id: client.id,
-          name: doc.name,
-          drive_path: doc.drive_path,
-          document_type: doc.document_type,
-          required: doc.required,
-          received: doc.received,
-        }));
+  const updateClient = (id: string, updates: Partial<Client>) => {
+    setClients(prev => prev.map(client => 
+      client.id === id 
+        ? { ...client, ...updates, updated_at: new Date().toISOString() }
+        : client
+    ));
+  };
 
-        const { error: docsError } = await supabase
-          .from('documents')
-          .insert(documentsToInsert);
-
-        if (docsError) throw docsError;
-      }
-
-      return client;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({
-        title: "Cliente criado!",
-        description: "Cliente foi adicionado com sucesso.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o cliente.",
-        variant: "destructive",
-      });
-      console.error('Error creating client:', error);
-    },
-  });
-
-  const updateClientMutation = useMutation({
-    mutationFn: async ({ clientId, clientData }: { 
-      clientId: string; 
-      clientData: Partial<Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
-    }) => {
-      const { data, error } = await supabase
-        .from('clients')
-        .update({
-          company_name: clientData.company_name,
-          contact_name: clientData.contact_name,
-          phone: clientData.phone,
-          drive_link: clientData.drive_link,
-        })
-        .eq('id', clientId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({
-        title: "Cliente atualizado!",
-        description: "Dados do cliente foram atualizados com sucesso.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o cliente.",
-        variant: "destructive",
-      });
-      console.error('Error updating client:', error);
-    },
-  });
-
-  const deleteClientMutation = useMutation({
-    mutationFn: async (clientId: string) => {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({
-        title: "Cliente excluído!",
-        description: "Cliente foi removido do sistema.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o cliente.",
-        variant: "destructive",
-      });
-      console.error('Error deleting client:', error);
-    },
-  });
+  const deleteClient = (id: string) => {
+    setClients(prev => prev.filter(client => client.id !== id));
+  };
 
   return {
     clients,
     isLoading,
-    error,
-    createClient: createClientMutation.mutate,
-    updateClient: updateClientMutation.mutate,
-    deleteClient: deleteClientMutation.mutate,
-    isCreating: createClientMutation.isPending,
-    isUpdating: updateClientMutation.isPending,
-    isDeleting: deleteClientMutation.isPending,
+    addClient,
+    updateClient,
+    deleteClient
   };
 };

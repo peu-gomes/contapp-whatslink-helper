@@ -4,243 +4,115 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Document } from '@/types';
 import { useClients } from '@/hooks/useClients';
-import { Plus, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface ClientFormProps {
   onSave: () => void;
 }
 
-const defaultDocuments: Omit<Document, 'id' | 'client_id' | 'created_at' | 'updated_at'>[] = [
-  { name: 'RG/CPF', drive_path: '', document_type: 'receive', required: true, received: false },
-  { name: 'Comprovante de Residência', drive_path: '', document_type: 'receive', required: true, received: false },
-  { name: 'Contrato Social', drive_path: '', document_type: 'receive', required: false, received: false },
-  { name: 'Cartão CNPJ', drive_path: '', document_type: 'receive', required: false, received: false },
-  { name: 'Balancete', drive_path: '', document_type: 'receive', required: false, received: false },
-];
-
 const ClientForm: React.FC<ClientFormProps> = ({ onSave }) => {
-  const [companyName, setCompanyName] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [driveLink, setDriveLink] = useState('');
-  const [documents, setDocuments] = useState<(Omit<Document, 'id' | 'client_id' | 'created_at' | 'updated_at'> & { tempId: string })[]>(
-    defaultDocuments.map((doc, index) => ({ ...doc, tempId: index.toString() }))
-  );
-  const [newDocName, setNewDocName] = useState('');
-  const [newDocType, setNewDocType] = useState<'send' | 'receive'>('receive');
+  const [formData, setFormData] = useState({
+    company_name: '',
+    contact_name: '',
+    phone: '',
+    drive_link: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { addClient } = useClients();
 
-  const { createClient, isCreating } = useClients();
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!companyName || !contactName || !phone) {
+    setIsLoading(true);
+
+    try {
+      addClient(formData);
+      toast({
+        title: "Cliente cadastrado!",
+        description: "O cliente foi adicionado com sucesso ao sistema.",
+      });
+      setFormData({
+        company_name: '',
+        contact_name: '',
+        phone: '',
+        drive_link: '',
+      });
+      onSave();
+    } catch (error) {
       toast({
         title: "Erro",
-        description: "Preencha todos os campos obrigatórios.",
+        description: "Não foi possível cadastrar o cliente.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    createClient({
-      company_name: companyName,
-      contact_name: contactName,
-      phone,
-      drive_link: driveLink,
-      documents: documents.map(({ tempId, ...doc }) => doc),
-    });
-
-    // Reset form
-    setCompanyName('');
-    setContactName('');
-    setPhone('');
-    setDriveLink('');
-    setDocuments(defaultDocuments.map((doc, index) => ({ ...doc, tempId: index.toString() })));
-    
-    onSave();
   };
 
-  const addDocument = () => {
-    if (!newDocName.trim()) return;
-    
-    const newDoc = {
-      tempId: Date.now().toString(),
-      name: newDocName,
-      drive_path: '',
-      document_type: newDocType,
-      required: false,
-      received: false,
-    };
-    
-    setDocuments([...documents, newDoc]);
-    setNewDocName('');
-    setNewDocType('receive');
-  };
-
-  const removeDocument = (tempId: string) => {
-    setDocuments(documents.filter(doc => doc.tempId !== tempId));
-  };
-
-  const toggleDocumentReceived = (tempId: string) => {
-    setDocuments(documents.map(doc => 
-      doc.tempId === tempId ? { ...doc, received: !doc.received } : doc
-    ));
-  };
-
-  const toggleDocumentRequired = (tempId: string) => {
-    setDocuments(documents.map(doc => 
-      doc.tempId === tempId ? { ...doc, required: !doc.required } : doc
-    ));
-  };
-
-  const updateDocumentType = (tempId: string, type: 'send' | 'receive') => {
-    setDocuments(documents.map(doc => 
-      doc.tempId === tempId ? { ...doc, document_type: type } : doc
-    ));
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Adicionar Novo Cliente</CardTitle>
           <CardDescription>
-            Preencha as informações do cliente e configure os documentos necessários
+            Preencha as informações do cliente para cadastrá-lo no sistema.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Nome da Empresa *</Label>
+                <Label htmlFor="company_name">Nome da Empresa</Label>
                 <Input
-                  id="companyName"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Ex: ABC Ltda"
+                  id="company_name"
+                  value={formData.company_name}
+                  onChange={(e) => handleChange('company_name', e.target.value)}
+                  placeholder="Nome da empresa"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactName">Nome do Contato *</Label>
+                <Label htmlFor="contact_name">Nome do Contato</Label>
                 <Input
-                  id="contactName"
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                  placeholder="Ex: João Silva"
+                  id="contact_name"
+                  value={formData.contact_name}
+                  onChange={(e) => handleChange('contact_name', e.target.value)}
+                  placeholder="Nome da pessoa de contato"
                   required
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">WhatsApp *</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex: (11) 99999-9999"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="driveLink">Link da Pasta no Drive</Label>
-                <Input
-                  id="driveLink"
-                  value={driveLink}
-                  onChange={(e) => setDriveLink(e.target.value)}
-                  placeholder="https://drive.google.com/..."
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                placeholder="(11) 99999-9999"
+                required
+              />
             </div>
 
-            <div className="space-y-4">
-              <Label>Documentos</Label>
-              
-              <div className="space-y-2">
-                {documents.map((doc) => (
-                  <div key={doc.tempId} className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <Checkbox
-                      checked={doc.received}
-                      onCheckedChange={() => toggleDocumentReceived(doc.tempId)}
-                    />
-                    <div className="flex-1">
-                      <span className={doc.received ? 'line-through text-gray-500' : ''}>
-                        {doc.name}
-                      </span>
-                      {doc.required && <span className="text-red-500 ml-1">*</span>}
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-xs">
-                          {doc.document_type === 'send' ? '📤 Enviamos' : '📥 Recebemos'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Select
-                        value={doc.document_type}
-                        onValueChange={(value: 'send' | 'receive') => updateDocumentType(doc.tempId, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="receive">📥 Receber</SelectItem>
-                          <SelectItem value="send">📤 Enviar</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Checkbox
-                        checked={doc.required}
-                        onCheckedChange={() => toggleDocumentRequired(doc.tempId)}
-                      />
-                      <Label className="text-xs text-gray-500">Obrigatório</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeDocument(doc.tempId)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex space-x-2">
-                <Input
-                  value={newDocName}
-                  onChange={(e) => setNewDocName(e.target.value)}
-                  placeholder="Nome do novo documento"
-                  className="flex-1"
-                />
-                <Select value={newDocType} onValueChange={(value: 'send' | 'receive') => setNewDocType(value)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receive">📥 Receber</SelectItem>
-                    <SelectItem value="send">📤 Enviar</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button type="button" onClick={addDocument}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="drive_link">Link do Google Drive (opcional)</Label>
+              <Input
+                id="drive_link"
+                value={formData.drive_link}
+                onChange={(e) => handleChange('drive_link', e.target.value)}
+                placeholder="https://drive.google.com/drive/folders/..."
+              />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isCreating}
-            >
-              {isCreating ? 'Salvando Cliente...' : 'Salvar Cliente'}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? 'Cadastrando...' : 'Cadastrar Cliente'}
             </Button>
           </form>
         </CardContent>
