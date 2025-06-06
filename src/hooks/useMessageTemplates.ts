@@ -12,7 +12,6 @@ export const useMessageTemplates = () => {
       {
         id: '1',
         name: 'Template Padrão - Solicitar Documentos',
-        type: 'receive',
         content: `Olá {{contact_name}}!
 
 Precisamos dos seguintes documentos da {{company_name}}:
@@ -22,15 +21,10 @@ Precisamos dos seguintes documentos da {{company_name}}:
 Por favor, envie os documentos pendentes o mais breve possível.
 
 Obrigado!`,
-        variables: ['contact_name', 'company_name', 'documents_list'],
-        is_default: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       },
       {
         id: '2',
         name: 'Template Padrão - Enviar Documentos',
-        type: 'send',
         content: `Olá {{contact_name}}!
 
 Seguem os documentos da {{company_name}}:
@@ -40,10 +34,6 @@ Seguem os documentos da {{company_name}}:
 Todos os documentos estão organizados no Drive.
 
 Qualquer dúvida, estamos à disposição!`,
-        variables: ['contact_name', 'company_name', 'documents_list'],
-        is_default: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       }
     ];
     

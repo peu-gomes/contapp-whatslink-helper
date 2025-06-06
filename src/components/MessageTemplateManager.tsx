@@ -6,8 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Save, Trash2, Copy } from 'lucide-react';
+import { Plus, Save, Trash2, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface MessageTemplate {
