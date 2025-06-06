@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,21 +23,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const { documents } = useDocuments(currentClient?.id || '');
 
-  // Reset states when client changes
-  useEffect(() => {
-    if (currentClient) {
-      setSelectedTemplate('');
-      setGeneratedMessage('');
-      setSelectedDocuments([]);
-    }
-  }, [currentClient]);
-
   const generateMessage = () => {
-    console.log('Gerando mensagem...');
-    console.log('Cliente atual:', currentClient);
-    console.log('Template selecionado:', selectedTemplate);
-    console.log('Templates do cliente:', currentClient?.message_templates);
-
     if (!currentClient || !selectedTemplate) {
       toast({
         title: "Erro",
@@ -48,14 +34,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
     }
 
     const template = currentClient.message_templates?.find(t => t.id === selectedTemplate);
-    if (!template) {
-      toast({
-        title: "Erro",
-        description: "Template não encontrado.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!template) return;
 
     // Filtrar documentos selecionados
     const clientDocs = documents.filter(doc => selectedDocuments.includes(doc.id));
@@ -64,18 +43,14 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
     let documentsList = '';
     let documentPath = '';
     
-    if (clientDocs.length > 0) {
-      clientDocs.forEach((doc, index) => {
-        documentsList += `${index + 1}. ${doc.name}`;
-        if (doc.drive_path) {
-          documentsList += ` (${doc.drive_path})`;
-          if (index === 0) documentPath = doc.drive_path; // Primeiro documento para a variável path
-        }
-        documentsList += '\n';
-      });
-    } else {
-      documentsList = 'Nenhum documento selecionado';
-    }
+    clientDocs.forEach((doc, index) => {
+      documentsList += `${index + 1}. ${doc.name}`;
+      if (doc.drive_path) {
+        documentsList += ` (${doc.drive_path})`;
+        if (index === 0) documentPath = doc.drive_path; // Primeiro documento para a variável path
+      }
+      documentsList += '\n';
+    });
 
     // Substituir variáveis no template
     let message = template.content
@@ -85,13 +60,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
       .replace(/\{\{documents_list\}\}/g, documentsList.trim())
       .replace(/\{\{document_path\}\}/g, documentPath);
 
-    console.log('Mensagem gerada:', message);
     setGeneratedMessage(message);
-
-    toast({
-      title: "Mensagem gerada!",
-      description: "A mensagem foi gerada com sucesso.",
-    });
   };
 
   const copyToClipboard = () => {
@@ -119,12 +88,6 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
     );
   };
 
-  const handleClientChange = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    console.log('Cliente selecionado:', client);
-    setCurrentClient(client || null);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -146,7 +109,12 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
                 <Label htmlFor="client-select">Cliente</Label>
                 <Select
                   value={currentClient?.id || ''}
-                  onValueChange={handleClientChange}
+                  onValueChange={(value) => {
+                    const client = clients.find(c => c.id === value);
+                    setCurrentClient(client || null);
+                    setSelectedDocuments([]);
+                    setSelectedTemplate('');
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um cliente" />
@@ -182,14 +150,6 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
                 </div>
               )}
 
-              {currentClient && (!currentClient.message_templates || currentClient.message_templates.length === 0) && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    Este cliente não possui templates configurados. Vá para a aba "Clientes" → "Editar" → "Templates" para criar um template.
-                  </p>
-                </div>
-              )}
-
               {currentClient && (
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <h4 className="font-medium text-gray-900 mb-2">Informações do Cliente:</h4>
@@ -198,16 +158,11 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
                     <strong>Contato:</strong> {currentClient.contact_name}<br />
                     <strong>Telefone:</strong> {currentClient.phone}
                   </p>
-                  <div className="flex space-x-2 mt-2">
-                    {currentClient.message_templates && (
-                      <Badge variant="secondary">
-                        {currentClient.message_templates.length} template(s) configurado(s)
-                      </Badge>
-                    )}
-                    <Badge variant="outline">
-                      {documents.length} documento(s) configurado(s)
+                  {currentClient.message_templates && (
+                    <Badge variant="secondary" className="mt-2">
+                      {currentClient.message_templates.length} template(s) configurado(s)
                     </Badge>
-                  </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -302,7 +257,7 @@ const WhatsAppGenerator: React.FC<WhatsAppGeneratorProps> = ({ clients }) => {
                 <div className="text-sm text-gray-600 space-y-2">
                   <p>1. Selecione um cliente</p>
                   <p>2. Escolha um template de mensagem</p>
-                  <p>3. Selecione os documentos (opcional)</p>
+                  <p>3. Selecione os documentos</p>
                   <p>4. Gere e envie a mensagem</p>
                 </div>
               </CardContent>

@@ -59,12 +59,7 @@ const ClientEditForm: React.FC<ClientEditFormProps> = ({ client, onSave, onCance
   };
 
   const handleSaveTemplates = (templates: any[]) => {
-    console.log('Salvando templates:', templates);
     updateClient(client.id, { message_templates: templates });
-    toast({
-      title: "Templates salvos!",
-      description: "Os templates foram salvos com sucesso.",
-    });
   };
 
   return (
