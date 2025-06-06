@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,11 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState({ name: '', content: '' });
+
+  // Sincronizar com os templates recebidos via props
+  useEffect(() => {
+    setLocalTemplates(templates);
+  }, [templates]);
 
   const availableVariables = [
     { key: 'contact_name', label: 'Nome do Contato' },
@@ -52,6 +57,7 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
 
     const updatedTemplates = [...localTemplates, template];
     setLocalTemplates(updatedTemplates);
+    onSave(updatedTemplates); // Salvar imediatamente
     setNewTemplate({ name: '', content: '' });
     setIsAdding(false);
     
@@ -66,6 +72,7 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
       template.id === id ? { ...template, ...updatedTemplate } : template
     );
     setLocalTemplates(updatedTemplates);
+    onSave(updatedTemplates); // Salvar imediatamente
     setEditingId(null);
     
     toast({
@@ -77,6 +84,7 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
   const handleDeleteTemplate = (id: string) => {
     const updatedTemplates = localTemplates.filter(template => template.id !== id);
     setLocalTemplates(updatedTemplates);
+    onSave(updatedTemplates); // Salvar imediatamente
     
     toast({
       title: "Template removido!",
@@ -95,28 +103,14 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
     return newText;
   };
 
-  const handleSaveAll = () => {
-    onSave(localTemplates);
-    toast({
-      title: "Templates salvos!",
-      description: "Todos os templates foram salvos no cliente.",
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Templates de Mensagem</h3>
-        <div className="flex space-x-2">
-          <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Template
-          </Button>
-          <Button onClick={handleSaveAll} variant="default">
-            <Save className="h-4 w-4 mr-2" />
-            Salvar Todos
-          </Button>
-        </div>
+        <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Template
+        </Button>
       </div>
 
       {isAdding && (
@@ -144,6 +138,7 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
                 onChange={(e) => setNewTemplate({...newTemplate, content: e.target.value})}
                 placeholder="Digite sua mensagem aqui..."
                 className="min-h-[200px]"
+                id="new-template-content"
               />
             </div>
 
@@ -154,7 +149,7 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                    const textarea = document.getElementById('new-template-content') as HTMLTextAreaElement;
                     if (textarea) {
                       const newContent = insertVariable(variable.key, textarea);
                       setNewTemplate({...newTemplate, content: newContent});
@@ -176,7 +171,10 @@ const MessageTemplateManager: React.FC<MessageTemplateManagerProps> = ({ templat
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setIsAdding(false)}
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewTemplate({ name: '', content: '' });
+                }}
                 className="flex-1"
               >
                 Cancelar
