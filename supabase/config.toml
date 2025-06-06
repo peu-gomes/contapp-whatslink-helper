@@ -1,1 +1,13 @@
+
 project_id = "rxkvnzcpqxlhmslldbge"
+
+[auth]
+# Enable password protection against leaked passwords
+enable_leaked_password_protection = true
+
+# Set OTP expiry to 30 minutes (1800 seconds) instead of default 1 hour
+[auth.email]
+otp_exp = 1800
+
+[auth.sms]
+otp_exp = 1800
